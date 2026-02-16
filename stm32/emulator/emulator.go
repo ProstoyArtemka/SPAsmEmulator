@@ -2,7 +2,6 @@ package emulator
 
 import (
 	"fmt"
-	"reflect"
 
 	"ru.prostoyartemka.mppt/stm32/data"
 )
@@ -54,8 +53,6 @@ func LoadEmulator(instructions []byte) data.EmulatorContext {
 
 		instruction := instructionSet.Instructions[currentByte]
 
-		fmt.Println(currentByte, reflect.TypeOf(instruction))
-
 		if instruction == nil {
 			context.Err = 1
 
@@ -81,16 +78,10 @@ func LoadEmulator(instructions []byte) data.EmulatorContext {
 			bytesArgs = append(bytesArgs, bytedArgument)
 		}
 
-		fmt.Println("args", bytesArgs)
-
-		for index, reg := range context.Registers {
-			fmt.Print("reg ", index, "=", reg.Get(), "; ")
-		}
-
 		instruction.Execute(bytesArgs, &context)
 
 		if context.Err != 0 {
-			fmt.Println("Exit with err", context.Err)
+			fmt.Println("Exit with error", context.Err)
 
 			return context
 		}
