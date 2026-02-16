@@ -31,7 +31,7 @@ func main() {
 
 	for index, reg := range context.Registers {
 
-		fmt.Println("Reg #", index, "Value: ", reg.Value)
+		fmt.Printf("Reg #%02v\t\t\t0x%016x\t\t%8d\n", index, uint(reg.Get()), reg.Get())
 
 	}
 
