@@ -32,6 +32,10 @@ const (
 	Q
 )
 
+var PSR_NAMES = []string{
+	"N", "Z", "C", "V", "Q",
+}
+
 type Register struct {
 	Value int32
 }

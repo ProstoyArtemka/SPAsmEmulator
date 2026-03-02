@@ -15,24 +15,34 @@ func main() {
 	if len(args) == 1 {
 
 		fmt.Println("Usage: ")
-		fmt.Println("\t./compiler <path_to_file>")
+		fmt.Println("\t./compiler emulate <path_to_file>")
+		fmt.Println("\t./compiler debug <path_to_file>")
 
 		return
 	}
 
-	path := args[1]
+	executeMode := args[1]
+	path := args[2]
 
 	data, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	context := emulator.LoadEmulator(data)
+	context := emulator.LoadEmulator(data, executeMode == "debug")
 
-	for index, reg := range context.Registers {
+	if executeMode == "emulate" {
+		for index, reg := range context.Registers {
 
-		fmt.Printf("Reg #%02v\t\t\t0x%016x\t\t%8d\n", index, uint(reg.Get()), reg.Get())
+			fmt.Printf("Reg #%02v\t\t\t0x%016x\t\t%8d\n", index, uint(reg.Get()), reg.Get())
 
+		}
+
+		return
+	}
+
+	if executeMode == "debug" {
+		emulator.RunDebugger(context)
 	}
 
 }

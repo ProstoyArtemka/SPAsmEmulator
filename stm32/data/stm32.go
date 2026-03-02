@@ -9,7 +9,7 @@ const (
 	OPERATION_SUB
 )
 
-func executeSuffix(suffix byte, status *Register) bool {
+func ExecuteSuffix(suffix byte, status *Register) bool {
 
 	if suffix == SUFFIX_EQ {
 		return status.GetBit(Z) == 1
@@ -118,17 +118,18 @@ func updateStatusNZ(result int32, status *Register) {
 var STM32 InstructionSet = InstructionSet{
 	Instructions: map[byte]Instruction{
 		0x01: AddInstruction{},
-
 		0x02: SubInstruction{},
-
 		0x03: MulInstruction{},
-
 		0x04: BranchInstruction{},
-
 		0x05: MoveInstruction{},
-
 		0x06: SignedDivideInstruction{},
+		0x07: CompareInstruction{},
+		0x08: LoadRegisterInstruction{},
 	},
+}
+
+var SUFFIXES_NAMES []string = []string{
+	"EQ", "NE", "CS", "HS", "CC", "LO", "MI", "PL", "VS", "VC", "HI", "LS", "GE", "LT", "GT", "LE", "AL", "S",
 }
 
 type AddInstruction struct{}
@@ -145,25 +146,16 @@ func (instruction AddInstruction) GetArgs() []Argument {
 
 }
 
+func (instruction AddInstruction) GetName() string { return "ADD" }
+
 func (instruction AddInstruction) Execute(args [][]byte, context *EmulatorContext) {
 
 	suffix := args[0][0]
 	status, _ := context.GetRegister(PSR)
 
-	if !executeSuffix(suffix, status) {
-		return
-	}
-
 	hasDestination := false
 	if args[1][0] != 0 {
 		hasDestination = true
-	}
-
-	destination, err := context.GetRegister(args[2][1])
-	if err {
-		context.Err = 1
-
-		return
 	}
 
 	register, err := context.GetRegister(args[3][1])
@@ -194,6 +186,14 @@ func (instruction AddInstruction) Execute(args [][]byte, context *EmulatorContex
 	}
 
 	if hasDestination {
+
+		destination, err := context.GetRegister(args[2][1])
+		if err {
+			context.Err = 1
+
+			return
+		}
+
 		destination.Set(result)
 
 		return
@@ -216,25 +216,16 @@ func (instruction SubInstruction) GetArgs() []Argument {
 
 }
 
+func (instruction SubInstruction) GetName() string { return "SUB" }
+
 func (instruction SubInstruction) Execute(args [][]byte, context *EmulatorContext) {
 
 	suffix := args[0][0]
 	status, _ := context.GetRegister(PSR)
 
-	if !executeSuffix(suffix, status) {
-		return
-	}
-
 	hasDestination := false
 	if args[1][0] != 0 {
 		hasDestination = true
-	}
-
-	destination, err := context.GetRegister(args[2][1])
-	if err {
-		context.Err = 1
-
-		return
 	}
 
 	register, err := context.GetRegister(args[3][1])
@@ -266,6 +257,14 @@ func (instruction SubInstruction) Execute(args [][]byte, context *EmulatorContex
 	}
 
 	if hasDestination {
+
+		destination, err := context.GetRegister(args[2][1])
+		if err {
+			context.Err = 1
+
+			return
+		}
+
 		destination.Set(int32(result))
 
 		return
@@ -288,25 +287,16 @@ func (instruction MulInstruction) GetArgs() []Argument {
 
 }
 
+func (instruction MulInstruction) GetName() string { return "MUL" }
+
 func (instruction MulInstruction) Execute(args [][]byte, context *EmulatorContext) {
 
 	suffix := args[0][0]
 	status, _ := context.GetRegister(PSR)
 
-	if !executeSuffix(suffix, status) {
-		return
-	}
-
 	hasDestination := false
 	if args[1][0] != 0 {
 		hasDestination = true
-	}
-
-	destination, err := context.GetRegister(args[2][1])
-	if err {
-		context.Err = 1
-
-		return
 	}
 
 	register, err := context.GetRegister(args[3][1])
@@ -333,6 +323,13 @@ func (instruction MulInstruction) Execute(args [][]byte, context *EmulatorContex
 	}
 
 	if hasDestination {
+		destination, err := context.GetRegister(args[2][1])
+		if err {
+			context.Err = 1
+
+			return
+		}
+
 		destination.Set(result)
 
 		return
@@ -352,14 +349,9 @@ func (instruction BranchInstruction) GetArgs() []Argument {
 
 }
 
+func (instruction BranchInstruction) GetName() string { return "B" }
+
 func (instruction BranchInstruction) Execute(args [][]byte, context *EmulatorContext) {
-
-	suffix := args[0][0]
-	status, _ := context.GetRegister(PSR)
-
-	if !executeSuffix(suffix, status) {
-		return
-	}
 
 	label := ParseInt32(args[1], 1)
 
@@ -378,13 +370,11 @@ func (instruction MoveInstruction) GetArgs() []Argument {
 	}
 }
 
+func (instruction MoveInstruction) GetName() string { return "MOV" }
+
 func (instruction MoveInstruction) Execute(args [][]byte, context *EmulatorContext) {
 	suffix := args[0][0]
 	status, _ := context.GetRegister(PSR)
-
-	if !executeSuffix(suffix, status) {
-		return
-	}
 
 	registerIndex := args[1][1]
 	register, err := context.GetRegister(registerIndex)
@@ -420,24 +410,13 @@ func (instruction SignedDivideInstruction) GetArgs() []Argument {
 	}
 }
 
-func (instruction SignedDivideInstruction) Execute(args [][]byte, context *EmulatorContext) {
-	suffix := args[0][0]
-	status, _ := context.GetRegister(PSR)
+func (instruction SignedDivideInstruction) GetName() string { return "SDIV" }
 
-	if !executeSuffix(suffix, status) {
-		return
-	}
+func (instruction SignedDivideInstruction) Execute(args [][]byte, context *EmulatorContext) {
 
 	hasDestination := false
 	if args[1][0] != 0 {
 		hasDestination = true
-	}
-
-	destination, err := context.GetRegister(args[2][1])
-	if err {
-		context.Err = 1
-
-		return
 	}
 
 	divisible, err := context.GetRegister(args[3][1])
@@ -458,10 +437,92 @@ func (instruction SignedDivideInstruction) Execute(args [][]byte, context *Emula
 	result := int32(uResult)
 
 	if hasDestination {
+		destination, err := context.GetRegister(args[2][1])
+		if err {
+			context.Err = 1
+
+			return
+		}
+
 		destination.Set(result)
 
 		return
 	}
 
 	divisible.Set(result)
+}
+
+type CompareInstruction struct{}
+
+func (instruction CompareInstruction) GetArgs() []Argument {
+
+	return []Argument{
+		{Size: 1},             // Suffix
+		{Size: REGISTER_SIZE}, // A
+		{Size: OPERAND_SIZE},  // B
+	}
+
+}
+
+func (instruction CompareInstruction) GetName() string { return "CMP" }
+
+func (instruction CompareInstruction) Execute(args [][]byte, context *EmulatorContext) {
+
+	status, _ := context.GetRegister(PSR)
+
+	registerAIndex := args[1][1]
+	registerA, err := context.GetRegister(registerAIndex)
+
+	if err {
+		context.Err = 1
+
+		return
+	}
+
+	operand := ParseOperand(args[2])
+
+	if operand == nil {
+		context.Err = 1
+
+		return
+	}
+
+	aValue := uint32(registerA.Get())
+	bValue := uint32(operand.GetValue(context))
+
+	uResult, uCarry := bits.Sub32(aValue, bValue, 0)
+	result := int32(uResult)
+	carry := int32(uCarry)
+
+	updateStatusFull(result, carry, testOverflow(int32(aValue), int32(bValue), int32(result), OPERATION_SUB), status)
+}
+
+type LoadRegisterInstruction struct{}
+
+func (instruction LoadRegisterInstruction) GetArgs() []Argument {
+
+	return []Argument{
+		{Size: 1},             // Suffix
+		{Size: REGISTER_SIZE}, // Register to store low half
+		{Size: WORD_SIZE},     // Word to laod
+	}
+
+}
+
+func (instruction LoadRegisterInstruction) GetName() string { return "LDR" }
+
+func (instruction LoadRegisterInstruction) Execute(args [][]byte, context *EmulatorContext) {
+
+	registerIndex := args[1][1]
+	register, err := context.GetRegister(registerIndex)
+
+	if err {
+		context.Err = 1
+
+		return
+	}
+
+	word := ParseWord(args[2])
+
+	register.Set(word)
 }
